@@ -1,2 +1,4 @@
-# everlight vault -- no temporary files
+# violet mapper -- exclude generated code, __pycache__/
 __pycache__/
+*.pyc
+.DS_Store

@@ -1,4 +1,4 @@
-"""Everlight CLI — configuration mirror and template management."""
+"""Everlight CLI — configuration mapper and template management."""
 
 from pathlib import Path
 from typing import Optional
@@ -9,8 +9,8 @@ import sys
 import click
 
 from . import __version__
-from .mirror import ConfigMirror, ConfigFormat
-from .library import TemplateLibrary
+from .mapper import SchemaMapper, ConfigFormat
+from .templates import FieldLibrary
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -19,11 +19,11 @@ def setup_logging(verbose: bool = False) -> None:
 
 
 @click.group()
-@click.version_option(version=__version__, prog_name="everlight")
+@click.version_option(version=__version__, prog_name="violet")
 @click.option("-v", "--verbose", is_flag=True)
 @click.pass_context
 def main(ctx: click.Context, verbose: bool) -> None:
-    """Everlight — Configuration mirror and template library."""
+    """Everlight — Configuration mapper and template templates."""
     setup_logging(verbose)
     ctx.ensure_object(dict)
 
@@ -33,8 +33,8 @@ def main(ctx: click.Context, verbose: bool) -> None:
 @click.option("-o", "--output", type=click.Path(), help="Export snapshots as JSON")
 def snapshot(root: str, output: Optional[str]) -> None:
     """Discover and snapshot configuration files in a directory."""
-    mirror = ConfigMirror()
-    snapshots = mirror.snapshot_directory(root)
+    mapper = SchemaMapper()
+    snapshots = mapper.snapshot_directory(root)
     click.echo(f"Snapshotted {len(snapshots)} config files")
     by_fmt: dict[str, int] = {}
     for s in snapshots:
@@ -58,15 +58,15 @@ def snapshot(root: str, output: Optional[str]) -> None:
 @click.argument("root", type=click.Path(exists=True))
 @click.option("--top", type=int, default=10, help="Show top N templates")
 def templates(root: str, top: int) -> None:
-    """Build a template library from configuration files."""
-    mirror = ConfigMirror()
-    snapshots = mirror.snapshot_directory(root)
-    library = TemplateLibrary()
-    new = library.ingest(snapshots)
+    """Build a template templates from configuration files."""
+    mapper = SchemaMapper()
+    snapshots = mapper.snapshot_directory(root)
+    templates = FieldLibrary()
+    new = templates.ingest(snapshots)
     click.echo(f"Total snapshots: {len(snapshots)}")
     click.echo(f"Unique templates: {new}")
     click.echo(f"\nTop {top} templates by frequency:")
-    for tpl in library.most_common(top):
+    for tpl in templates.most_common(top):
         click.echo(f"  [{tpl.format.name.lower()}] {tpl.name}: "
                    f"{tpl.source_count} sources, {len(tpl.keys)} keys")
 

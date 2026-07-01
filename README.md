@@ -1,19 +1,19 @@
-# Everlight Vault
+# Violet Mapper
 
-长明灯下，万般配置皆有归处。
+JSON Schema to Python dataclass mapper. Generates type-safe dataclass code from JSON Schema definitions.
 
-A configuration management toolkit and template library. Scans
-open-source repositories for common configuration patterns
-(dotenv, YAML, TOML, Dockerfile), normalizes them into reusable
-templates, and publishes a curated library.
+## Installation
 
-## What It Does
-- Pattern-matches configuration files across GitHub
-- Normalizes and deduplicates into canonical templates
-- Publishes template snapshots hourly
+```bash
+pip install violet-mapper
+```
 
-## Inspiration
-Every project reinvents the same config files. Everlight Vault collects
-the patterns so you don't have to start from scratch.
+## Usage
 
-Python. GitHub Actions. Templates committed to this repository.
+```bash
+violet --help
+```
+
+## License
+
+MIT

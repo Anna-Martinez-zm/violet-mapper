@@ -3,28 +3,27 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.backends._legacy:_Backend"
 
 [project]
-name = "everlight-vault"
-version = "0.5.0"
-description = "Configuration mirror, template library, and versioning system"
+name = "violet-mapper"
+version = "0.4.0"
+description = "JSON Schema to Python dataclass mapper"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
 classifiers = [
     "Development Status :: 3 - Alpha",
-    "Intended Audience :: System Administrators",
-    "Topic :: System :: Archiving :: Mirroring",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Code Generators",
 ]
 dependencies = [
     "click>=8.1",
-    "pyyaml>=6.0",
-    "toml>=0.10",
+    "jinja2>=3.1",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0", "pytest-cov", "ruff"]
 
 [project.scripts]
-everlight = "vault.cli:main"
+violet = "violet.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

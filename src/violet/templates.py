@@ -1,25 +1,25 @@
-"""Template library — deduplication and organization of config snapshots."""
+"""Template templates — deduplication and organization of config snapshots."""
 
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Dict, List
 
-from .mirror import ConfigSnapshot, ConfigTemplate, ConfigFormat
+from .mapper import MappingResult, DataclassTemplate, ConfigFormat
 
 
 @dataclass
-class TemplateLibrary:
+class FieldLibrary:
     """Organizes configuration snapshots into deduplicated templates.
 
     Groups configs by key-set similarity, generates canonical templates
     with placeholder types, and tracks template usage frequency.
     """
 
-    templates: Dict[str, ConfigTemplate] = field(default_factory=dict)
+    templates: Dict[str, DataclassTemplate] = field(default_factory=dict)
     _key_signatures: Dict[str, List[str]] = field(default_factory=dict)
 
-    def ingest(self, snapshots: List[ConfigSnapshot]) -> int:
-        """Ingest snapshots into the library, returning new templates created."""
+    def ingest(self, snapshots: List[MappingResult]) -> int:
+        """Ingest snapshots into the templates, returning new templates created."""
         new_count = 0
         for snap in snapshots:
             sig = self._signature(snap)
@@ -30,7 +30,7 @@ class TemplateLibrary:
             else:
                 self._key_signatures[sig] = [snap.path]
                 placeholders = {k: "str" for k in snap.keys}
-                tpl = ConfigTemplate(
+                tpl = DataclassTemplate(
                     name=self._template_name(snap),
                     format=snap.format,
                     keys=snap.keys,
@@ -42,21 +42,21 @@ class TemplateLibrary:
                 new_count += 1
         return new_count
 
-    def most_common(self, n: int = 10) -> List[ConfigTemplate]:
+    def most_common(self, n: int = 10) -> List[DataclassTemplate]:
         sorted_tpls = sorted(
             self.templates.values(), key=lambda t: -t.source_count
         )
         return sorted_tpls[:n]
 
-    def by_format(self, fmt: ConfigFormat) -> List[ConfigTemplate]:
+    def by_format(self, fmt: ConfigFormat) -> List[DataclassTemplate]:
         return [t for t in self.templates.values() if t.format == fmt]
 
     @staticmethod
-    def _signature(snap: ConfigSnapshot) -> str:
+    def _signature(snap: MappingResult) -> str:
         return "|".join(sorted(snap.keys))
 
     @staticmethod
-    def _template_name(snap: ConfigSnapshot) -> str:
+    def _template_name(snap: MappingResult) -> str:
         import hashlib
         h = hashlib.md5(snap.path.encode()).hexdigest()[:8]
         fmt = snap.format.name.lower()

@@ -1,5 +1,5 @@
 """
-Configuration mirror and versioning engine.
+Configuration mapper and versioning engine.
 
 Discovers configuration files (dotenv, YAML, TOML, JSON, INI, Dockerfile),
 normalizes them into canonical templates, tracks versions with diffs,
@@ -25,7 +25,7 @@ from enum import Enum, auto
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
 
-logger = logging.getLogger("vault.mirror")
+logger = logging.getLogger("violet.mapper")
 
 
 class ConfigFormat(Enum):
@@ -58,7 +58,7 @@ class ConfigFormat(Enum):
 
 
 @dataclass
-class ConfigTemplate:
+class DataclassTemplate:
     """A normalized, anonymized configuration template.
 
     Key-values are generalized: actual secrets/IPs/paths replaced
@@ -75,7 +75,7 @@ class ConfigTemplate:
 
 
 @dataclass
-class ConfigSnapshot:
+class MappingResult:
     """A point-in-time snapshot of a single configuration file."""
 
     path: str
@@ -88,7 +88,7 @@ class ConfigSnapshot:
     line_count: int = 0
 
 
-class ConfigMirror:
+class SchemaMapper:
     """Discovers, normalizes, snapshots, and versions configuration files.
 
     Mimics a versioned backup system for configuration drift tracking.
@@ -113,7 +113,7 @@ class ConfigMirror:
     ]
 
     def __init__(self):
-        self._store: Dict[str, ConfigSnapshot] = {}
+        self._store: Dict[str, MappingResult] = {}
 
     def discover(self, root: str | Path) -> List[Path]:
         """Find all configuration files in a directory tree."""
@@ -130,7 +130,7 @@ class ConfigMirror:
         logger.info("Discovered %d config files in %s", len(configs), root_path)
         return sorted(configs)
 
-    def snapshot(self, filepath: Path) -> Optional[ConfigSnapshot]:
+    def snapshot(self, filepath: Path) -> Optional[MappingResult]:
         """Capture a versioned snapshot of a configuration file."""
         fmt = ConfigFormat.detect(filepath)
         try:
@@ -142,7 +142,7 @@ class ConfigMirror:
             return self._store[content_hash]
         keys = self._extract_keys(raw, fmt)
         anonymized = self._anonymize(raw, fmt, keys)
-        snap = ConfigSnapshot(
+        snap = MappingResult(
             path=str(filepath),
             format=fmt,
             content_hash=content_hash,
@@ -154,7 +154,7 @@ class ConfigMirror:
         self._store[content_hash] = snap
         return snap
 
-    def snapshot_directory(self, root: str | Path) -> List[ConfigSnapshot]:
+    def snapshot_directory(self, root: str | Path) -> List[MappingResult]:
         configs = self.discover(root)
         return [s for p in configs if (s := self.snapshot(p)) is not None]
 
@@ -167,20 +167,20 @@ class ConfigMirror:
                 import yaml
                 data = yaml.safe_load(content)
                 if isinstance(data, dict):
-                    keys = ConfigMirror._flatten_keys(data)
+                    keys = SchemaMapper._flatten_keys(data)
             elif fmt == ConfigFormat.TOML:
                 data = tomllib.loads(content)
-                keys = ConfigMirror._flatten_keys(data)
+                keys = SchemaMapper._flatten_keys(data)
             elif fmt == ConfigFormat.JSON:
                 data = json.loads(content)
                 if isinstance(data, dict):
-                    keys = ConfigMirror._flatten_keys(data)
+                    keys = SchemaMapper._flatten_keys(data)
             elif fmt == ConfigFormat.DOTENV:
                 for line in content.split("\n"):
                     line = line.strip()
                     if line and not line.startswith("#") and "=" in line:
                         k, v = line.split("=", 1)
-                        keys[k.strip()] = ConfigMirror._type_name(v.strip())
+                        keys[k.strip()] = SchemaMapper._type_name(v.strip())
             elif fmt == ConfigFormat.INI:
                 import configparser
                 parser = configparser.ConfigParser()
@@ -188,7 +188,7 @@ class ConfigMirror:
                 for section in parser.sections():
                     for k, v in parser.items(section):
                         full = f"{section}.{k}"
-                        keys[full] = ConfigMirror._type_name(v)
+                        keys[full] = SchemaMapper._type_name(v)
         except Exception:
             pass
         return keys
@@ -213,7 +213,7 @@ class ConfigMirror:
                         )
         return result
 
-    def diff_snapshots(self, a: ConfigSnapshot, b: ConfigSnapshot) -> Dict[str, Any]:
+    def diff_snapshots(self, a: MappingResult, b: MappingResult) -> Dict[str, Any]:
         """Compute structural diff between two snapshots."""
         keys_added = set(b.keys) - set(a.keys)
         keys_removed = set(a.keys) - set(b.keys)
@@ -234,9 +234,9 @@ class ConfigMirror:
         for k, v in data.items():
             full = f"{prefix}.{k}" if prefix else k
             if isinstance(v, dict):
-                result.update(ConfigMirror._flatten_keys(v, full))
+                result.update(SchemaMapper._flatten_keys(v, full))
             else:
-                result[full] = ConfigMirror._type_name(str(v))
+                result[full] = SchemaMapper._type_name(str(v))
         return result
 
     @staticmethod
